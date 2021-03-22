@@ -31,15 +31,34 @@ struct ActionBarView: View {
     @Binding var headers: [String : String]
     @Binding var requestBody: [String : Any]
     @Binding var responseStatus: HTTPURLResponse?
+    @Binding var cachePolicy: String
     
     func execute(method: RequestMethod) {
         isProcessing = true
+        var cachePolicySelected: URLRequest.CachePolicy {
+            switch cachePolicy {
+            case cachePolicies.reloadIgnoringCacheData.rawValue:
+                return .reloadIgnoringCacheData
+            case cachePolicies.reloadIgnoringLocalAndRemoteCacheData.rawValue:
+                return .reloadIgnoringLocalAndRemoteCacheData
+            case cachePolicies.reloadIgnoringLocalCacheData.rawValue:
+                return .reloadIgnoringLocalCacheData
+            case cachePolicies.reloadRevalidatingCacheData.rawValue:
+                return .reloadRevalidatingCacheData
+            case cachePolicies.returnCacheDataDontLoad.rawValue:
+                return .returnCacheDataDontLoad
+            case cachePolicies.returnCacheDataElseLoad.rawValue:
+                return .returnCacheDataElseLoad
+            default:
+                return .useProtocolCachePolicy
+            }
+        }
         if isBulkRequest {
             DispatchQueue.global().async {
                 response = ""
                 bulkResponsesStatusCodes = []
                 for reqBody in bulkRequestBody {
-                    let req: Request = Request(url: url, method: method, requestBody: reqBody, requestHeaders: headers)
+                    let req: Request = Request(url: url, method: method, cachingPolicy: cachePolicySelected, requestBody: reqBody, requestHeaders: headers)
                     let res = req.executeRequest()
                     responseStatus = res.responseStatus
                     response += "\t\t---START OF RESPONSE---\n" + (res.response.prettyPrintedJSONString ?? "") + "\n\t\t---END OF RESPONSE---\n\n"
@@ -134,6 +153,8 @@ struct FieldsToggleView: View {
     @Binding var isHeaderFieldsEnabled: Bool
     @Binding var isBulkRequest: Bool
     @Binding var bulkRequestBody: [[String : Any]]
+    @Binding var cachePolicy: String
+    @State var cachePoliciesList: [String] = cachePolicies.allCases.map({ $0.rawValue })
     
     func pickFile() -> String? {
         let dialog = NSOpenPanel();
@@ -162,6 +183,11 @@ struct FieldsToggleView: View {
             Toggle("Query Params", isOn: $isParamsEnabled)
             Toggle("Header Fields", isOn: $isHeaderFieldsEnabled)
             Toggle("Bulk requests", isOn: $isBulkRequest)
+            Picker("Cache policy", selection: $cachePolicy) {
+                ForEach(cachePoliciesList, id: \.self){ policy in
+                    Text(policy)
+                }
+            }
             if isBulkRequest {
                 Button(action: {
                     guard let bulkRequestBodyFilePath: String = pickFile() else { return }
@@ -339,7 +365,7 @@ struct ContentView: View {
     
     @State var url:String = ""
     @State var response: String = ""
-    @State var methods: [String] = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    @State var methods: [String] = RequestMethod.allCases.map({ $0.rawValue })
     @State var requestBody: [String : Any] = [:]
     @State var headers: [String : String] = [:]
     @State var method: Int = 0
@@ -367,6 +393,7 @@ struct ContentView: View {
     @State var bulkRequestBody: [[String : Any]] = []
     @State var isBulkRequest: Bool = false
     @State var profileName: String = ""
+    @State var cachePolicy: String = cachePolicies.useProtocolCachePolicy.rawValue
     
     func getResponseHeaders(response: String) -> String {
         let regex = try! NSRegularExpression(pattern: "Optional\\(<NSHTTPURLResponse: 0x(([0-9]|[a-f]){12})>", options: NSRegularExpression.Options.caseInsensitive)
@@ -461,9 +488,9 @@ struct ContentView: View {
                     }).padding()
                 }
                 
-                ActionBarView(url: $url, methods: $methods, method: $method, isProcessing: $isProcessing, isBulkRequest: $isBulkRequest, response: $response, bulkResponsesStatusCodes: $bulkResponsesStatusCodes, bulkRequestBody: $bulkRequestBody, headers: $headers, requestBody: $requestBody, responseStatus: $responseStatus)
+                ActionBarView(url: $url, methods: $methods, method: $method, isProcessing: $isProcessing, isBulkRequest: $isBulkRequest, response: $response, bulkResponsesStatusCodes: $bulkResponsesStatusCodes, bulkRequestBody: $bulkRequestBody, headers: $headers, requestBody: $requestBody, responseStatus: $responseStatus, cachePolicy: $cachePolicy)
                 
-                FieldsToggleView(isParamsEnabled: $isParamsEnabled, isHeaderFieldsEnabled: $isHeaderFieldsEnabled, isBulkRequest: $isBulkRequest, bulkRequestBody: $bulkRequestBody)
+                FieldsToggleView(isParamsEnabled: $isParamsEnabled, isHeaderFieldsEnabled: $isHeaderFieldsEnabled, isBulkRequest: $isBulkRequest, bulkRequestBody: $bulkRequestBody, cachePolicy: $cachePolicy)
                 
                 ParamsEnabledView(isParamsEnabled: $isParamsEnabled, key: $key, value: $value, url: $url)
                 

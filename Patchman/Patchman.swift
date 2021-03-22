@@ -138,12 +138,22 @@ struct Profile: Codable {
     
 }
 
-enum RequestMethod: String {
+enum RequestMethod: String, CaseIterable {
     case GET = "GET"
     case POST = "POST"
     case PUT = "PUT"
     case PATCH = "PATCH"
     case DELETE = "DELETE"
+}
+
+enum cachePolicies: String, CaseIterable {
+    case reloadIgnoringLocalAndRemoteCacheData = "Reload ignoring local and remote cache data"
+    case reloadIgnoringLocalCacheData = "Reload ignoring local cache data"
+    case reloadRevalidatingCacheData = "Reload revalidating cache data"
+    case returnCacheDataDontLoad = "Return cache data don't load"
+    case returnCacheDataElseLoad = "Return cache data else load"
+    case useProtocolCachePolicy = "Use protocol cache policy"
+    case reloadIgnoringCacheData = "Reload ignoring cache data"
 }
 
 struct Response{
