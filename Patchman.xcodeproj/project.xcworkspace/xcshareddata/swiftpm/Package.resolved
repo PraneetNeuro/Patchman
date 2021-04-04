@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "CodeViewer",
+        "repositoryURL": "https://github.com/dwarvesf/CodeViewer",
+        "state": {
+          "branch": null,
+          "revision": "44bd04af81046ce65a4e38dc97a9dd3d387f069e",
+          "version": "1.2.4"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

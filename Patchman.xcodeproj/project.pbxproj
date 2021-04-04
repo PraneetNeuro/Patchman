@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -12,6 +12,7 @@
 		B780946326004E8D00AEB870 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B780946226004E8D00AEB870 /* Assets.xcassets */; };
 		B780946626004E8D00AEB870 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B780946526004E8D00AEB870 /* Preview Assets.xcassets */; };
 		B780947026004EA200AEB870 /* Patchman.swift in Sources */ = {isa = PBXBuildFile; fileRef = B780946F26004EA200AEB870 /* Patchman.swift */; };
+		B7BBE58A2609B4160087E461 /* CodeViewer in Frameworks */ = {isa = PBXBuildFile; productRef = B7BBE5892609B4160087E461 /* CodeViewer */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B7BBE58A2609B4160087E461 /* CodeViewer in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,6 +92,9 @@
 			dependencies = (
 			);
 			name = Patchman;
+			packageProductDependencies = (
+				B7BBE5892609B4160087E461 /* CodeViewer */,
+			);
 			productName = Patchman;
 			productReference = B780945B26004E8C00AEB870 /* Patchman.app */;
 			productType = "com.apple.product-type.application";
@@ -117,6 +122,9 @@
 				Base,
 			);
 			mainGroup = B780945226004E8C00AEB870;
+			packageReferences = (
+				B7BBE5882609B4160087E461 /* XCRemoteSwiftPackageReference "CodeViewer" */,
+			);
 			productRefGroup = B780945C26004E8C00AEB870 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -337,6 +345,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B7BBE5882609B4160087E461 /* XCRemoteSwiftPackageReference "CodeViewer" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/dwarvesf/CodeViewer";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B7BBE5892609B4160087E461 /* CodeViewer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B7BBE5882609B4160087E461 /* XCRemoteSwiftPackageReference "CodeViewer" */;
+			productName = CodeViewer;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B780945326004E8C00AEB870 /* Project object */;
 }

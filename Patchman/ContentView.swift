@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CodeViewer
 
 struct LogoView: View {
     var body: some View {
@@ -15,6 +16,56 @@ struct LogoView: View {
                 .padding(.top)
             Spacer()
         }.padding(.horizontal)
+    }
+}
+
+struct JSONEditorOptionsView: View {
+    @Binding var isHeaderAsJson: Bool
+    @Binding var isHeaderFieldsEnabled: Bool
+    @Binding var headerKey: String
+    @Binding var headerValue: String
+    @Binding var headers: [String : String]
+    @Binding var isBulkRequest: Bool
+    @Binding var isBodyAsJson: Bool
+    @Binding var method: Int
+    @Binding var bodyKey: String
+    @Binding var bodyValue: String
+    @Binding var requestBody: [String : Any]
+    @Binding var editorFor: Int
+    var body: some View {
+        if !isHeaderAsJson {
+            HeadersEnabledView(isHeaderFieldsEnabled: $isHeaderFieldsEnabled, headerKey: $headerKey, headerValue: $headerValue, headers: $headers)
+        }
+        if !isBulkRequest && !isBodyAsJson {
+            BodyFillerView(method: $method, bodyKey: $bodyKey, bodyValue: $bodyValue, requestBody: $requestBody)
+        }
+        
+        if isHeaderFieldsEnabled || method > 0 && method < 4 && !isBulkRequest {
+            VStack(alignment: .leading){
+                Text("JSON Editor")
+                    .bold()
+                    .font(.subheadline)
+                HStack {
+                    if isHeaderFieldsEnabled {
+                        Toggle("Headers", isOn: $isHeaderAsJson)
+                            .onChange(of: isHeaderAsJson) { value in
+                                if value {
+                                    editorFor = 1
+                                }
+                            }
+                    }
+                    if method > 0 && method < 4 && !isBulkRequest {
+                        Toggle("Request Body", isOn: $isBodyAsJson)
+                            .onChange(of: isBodyAsJson) { value in
+                                if value {
+                                    editorFor = 2
+                                }
+                            }
+                    }
+                    Spacer()
+                }.padding(.leading)
+            }.padding(.top)
+        }
     }
 }
 
@@ -394,6 +445,12 @@ struct ContentView: View {
     @State var isBulkRequest: Bool = false
     @State var profileName: String = ""
     @State var cachePolicy: String = cachePolicies.useProtocolCachePolicy.rawValue
+
+    @State var isHeaderAsJson: Bool = false
+    @State var isBodyAsJson: Bool = false
+    @State var headerJson: String = ""
+    @State var bodyJson: String = ""
+    @State var editorFor: Int = -1
     
     func getResponseHeaders(response: String) -> String {
         let regex = try! NSRegularExpression(pattern: "Optional\\(<NSHTTPURLResponse: 0x(([0-9]|[a-f]){12})>", options: NSRegularExpression.Options.caseInsensitive)
@@ -494,10 +551,46 @@ struct ContentView: View {
                 
                 ParamsEnabledView(isParamsEnabled: $isParamsEnabled, key: $key, value: $value, url: $url)
                 
-                HeadersEnabledView(isHeaderFieldsEnabled: $isHeaderFieldsEnabled, headerKey: $headerKey, headerValue: $headerValue, headers: $headers)
+                JSONEditorOptionsView(isHeaderAsJson: $isHeaderAsJson, isHeaderFieldsEnabled: $isHeaderFieldsEnabled, headerKey: $headerKey, headerValue: $headerValue, headers: $headers, isBulkRequest: $isBulkRequest, isBodyAsJson: $isBodyAsJson, method: $method, bodyKey: $bodyKey, bodyValue: $bodyValue, requestBody: $requestBody, editorFor: $editorFor)
                 
-                if !isBulkRequest {
-                    BodyFillerView(method: $method, bodyKey: $bodyKey, bodyValue: $bodyValue, requestBody: $requestBody)
+                if isHeaderAsJson && isBodyAsJson {
+                    Picker(selection: $editorFor, label: Text("")) {
+                        Text("Headers").tag(1)
+                        Text("Request Body").tag(2)
+                    }.pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                }
+                
+                if editorFor == 1 {
+                    CodeViewer(
+                        content: $headerJson,
+                        textDidChanged: { json in
+                            if let data = json.data(using: .utf8) {
+                                    do {
+                                        if let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:String] {
+                                        headers = json
+                                        }
+                                    } catch {
+                                        print("Something went wrong")
+                                    }
+                                }
+                        }
+                    ).padding(.horizontal)
+                } else if editorFor == 2 {
+                    CodeViewer(
+                        content: $bodyJson,
+                        textDidChanged: { json in
+                            if let data = json.data(using: .utf8) {
+                                    do {
+                                        if let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:Any]{
+                                        requestBody = json
+                                        }
+                                    } catch {
+                                        print("Something went wrong")
+                                    }
+                                }
+                        }
+                    ).padding(.horizontal)
                 }
                 
                 ResponseHeaderAndOptionsView(response: $response, responseStatus: $responseStatus, isResponseHeadersShown: $isResponseHeadersShown, isBulkResponseStatusesShown: $isBulkResponseStatusesShown, isBulkRequest: $isBulkRequest)
