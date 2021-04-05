@@ -32,12 +32,14 @@ struct JSONEditorOptionsView: View {
     @Binding var bodyValue: String
     @Binding var requestBody: [String : Any]
     @Binding var editorFor: Int
+    @Binding var headersJson: String
+    @Binding var bodyJson: String
     var body: some View {
         if !isHeaderAsJson {
-            HeadersEnabledView(isHeaderFieldsEnabled: $isHeaderFieldsEnabled, headerKey: $headerKey, headerValue: $headerValue, headers: $headers)
+            HeadersEnabledView(isHeaderFieldsEnabled: $isHeaderFieldsEnabled, headerKey: $headerKey, headerValue: $headerValue, headers: $headers, headersJson: $headersJson)
         }
         if !isBulkRequest && !isBodyAsJson {
-            BodyFillerView(method: $method, bodyKey: $bodyKey, bodyValue: $bodyValue, requestBody: $requestBody)
+            BodyFillerView(method: $method, bodyKey: $bodyKey, bodyValue: $bodyValue, requestBody: $requestBody, requestBodyJson: $bodyJson)
         }
         
         if isHeaderFieldsEnabled || method > 0 && method < 4 && !isBulkRequest {
@@ -276,6 +278,7 @@ struct HeadersEnabledView: View {
     @Binding var headerKey: String
     @Binding var headerValue: String
     @Binding var headers: [String : String]
+    @Binding var headersJson: String
     var body: some View {
         if isHeaderFieldsEnabled {
             HStack {
@@ -287,6 +290,10 @@ struct HeadersEnabledView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 Button("Add", action: {
                     headers[headerKey] = headerValue
+                    do {
+                        let jsonData = try JSONSerialization.data(withJSONObject: headers, options: .prettyPrinted)
+                        headersJson = String(data: jsonData, encoding: .utf8) ?? ""
+                    } catch {}
                 })
                 Spacer()
             }.padding([.horizontal, .top])
@@ -353,6 +360,7 @@ struct BodyFillerView: View {
     @Binding var bodyKey: String
     @Binding var bodyValue: String
     @Binding var requestBody: [String : Any]
+    @Binding var requestBodyJson: String
     var body: some View {
         if method > 0 && method < 4 {
             HStack {
@@ -364,6 +372,10 @@ struct BodyFillerView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 Button("Add", action: {
                     requestBody[bodyKey] = bodyValue
+                    do {
+                        let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: .prettyPrinted)
+                        requestBodyJson = String(data: jsonData, encoding: .utf8) ?? ""
+                    } catch {}
                 })
                 Spacer()
             }.padding([.horizontal, .top])
@@ -551,7 +563,7 @@ struct ContentView: View {
                 
                 ParamsEnabledView(isParamsEnabled: $isParamsEnabled, key: $key, value: $value, url: $url)
                 
-                JSONEditorOptionsView(isHeaderAsJson: $isHeaderAsJson, isHeaderFieldsEnabled: $isHeaderFieldsEnabled, headerKey: $headerKey, headerValue: $headerValue, headers: $headers, isBulkRequest: $isBulkRequest, isBodyAsJson: $isBodyAsJson, method: $method, bodyKey: $bodyKey, bodyValue: $bodyValue, requestBody: $requestBody, editorFor: $editorFor)
+                JSONEditorOptionsView(isHeaderAsJson: $isHeaderAsJson, isHeaderFieldsEnabled: $isHeaderFieldsEnabled, headerKey: $headerKey, headerValue: $headerValue, headers: $headers, isBulkRequest: $isBulkRequest, isBodyAsJson: $isBodyAsJson, method: $method, bodyKey: $bodyKey, bodyValue: $bodyValue, requestBody: $requestBody, editorFor: $editorFor, headersJson: $headerJson, bodyJson: $bodyJson)
                 
                 if isHeaderAsJson && isBodyAsJson {
                     Picker(selection: $editorFor, label: Text("")) {
@@ -561,7 +573,7 @@ struct ContentView: View {
                     .padding(.horizontal)
                 }
                 
-                if editorFor == 1 {
+                if editorFor == 1 && isHeaderAsJson {
                     CodeViewer(
                         content: $headerJson,
                         textDidChanged: { json in
@@ -575,8 +587,10 @@ struct ContentView: View {
                                     }
                                 }
                         }
-                    ).padding(.horizontal)
-                } else if editorFor == 2 {
+                    )
+                    .cornerRadius(6)
+                    .padding(.horizontal)
+                } else if editorFor == 2 && isBodyAsJson {
                     CodeViewer(
                         content: $bodyJson,
                         textDidChanged: { json in
@@ -590,7 +604,9 @@ struct ContentView: View {
                                     }
                                 }
                         }
-                    ).padding(.horizontal)
+                    )
+                    .cornerRadius(6)
+                    .padding(.horizontal)
                 }
                 
                 ResponseHeaderAndOptionsView(response: $response, responseStatus: $responseStatus, isResponseHeadersShown: $isResponseHeadersShown, isBulkResponseStatusesShown: $isBulkResponseStatusesShown, isBulkRequest: $isBulkRequest)
