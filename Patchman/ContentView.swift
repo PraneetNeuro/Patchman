@@ -42,7 +42,7 @@ struct JSONEditorOptionsView: View {
             BodyFillerView(method: $method, bodyKey: $bodyKey, bodyValue: $bodyValue, requestBody: $requestBody, requestBodyJson: $bodyJson)
         }
         
-        if isHeaderFieldsEnabled || method > 0 && method < 4 && !isBulkRequest {
+        if isHeaderFieldsEnabled || !isBulkRequest {
             VStack(alignment: .leading){
                 Text("JSON Editor")
                     .bold()
@@ -56,7 +56,7 @@ struct JSONEditorOptionsView: View {
                                 }
                             }
                     }
-                    if method > 0 && method < 4 && !isBulkRequest {
+                    if !isBulkRequest {
                         Toggle("Request Body", isOn: $isBodyAsJson)
                             .onChange(of: isBodyAsJson) { value in
                                 if value {
@@ -362,24 +362,22 @@ struct BodyFillerView: View {
     @Binding var requestBody: [String : Any]
     @Binding var requestBodyJson: String
     var body: some View {
-        if method > 0 && method < 4 {
-            HStack {
-                TextField("Request body key", text: $bodyKey)
-                    .frame(width: 130)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                TextField("Value", text: $bodyValue)
-                    .frame(width: 130)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                Button("Add", action: {
-                    requestBody[bodyKey] = bodyValue
-                    do {
-                        let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: .prettyPrinted)
-                        requestBodyJson = String(data: jsonData, encoding: .utf8) ?? ""
-                    } catch {}
-                })
-                Spacer()
-            }.padding([.horizontal, .top])
-        }
+        HStack {
+            TextField("Request body key", text: $bodyKey)
+                .frame(width: 130)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            TextField("Value", text: $bodyValue)
+                .frame(width: 130)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            Button("Add", action: {
+                requestBody[bodyKey] = bodyValue
+                do {
+                    let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: .prettyPrinted)
+                    requestBodyJson = String(data: jsonData, encoding: .utf8) ?? ""
+                } catch {}
+            })
+            Spacer()
+        }.padding([.horizontal, .top])
     }
 }
 
@@ -478,7 +476,7 @@ struct ContentView: View {
     }
     
     var body: some View {
-        HStack {
+         HStack {
             VStack {
                 List {
                     Text("Presets")
@@ -536,6 +534,12 @@ struct ContentView: View {
                                 isHeaderFieldsEnabled = profile.isHeadersEnabled
                                 isBulkRequest = profile.isBulkRequest
                                 bulkRequestBody = profile.bulkRequestBody
+                                do {
+                                    let jsonHeaderData = try JSONSerialization.data(withJSONObject: headers, options: .prettyPrinted)
+                                    headerJson = String(data: jsonHeaderData, encoding: .utf8) ?? ""
+                                    let jsonBodyData = try JSONSerialization.data(withJSONObject: requestBody, options: .prettyPrinted)
+                                    bodyJson = String(data: jsonBodyData, encoding: .utf8) ?? ""
+                                } catch {}
                             }
                     }
                 }.frame(minWidth: 200, maxWidth: 200)
