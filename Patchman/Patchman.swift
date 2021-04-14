@@ -6,6 +6,17 @@
 //
 
 import Foundation
+import Cocoa
+
+class Defaults : ObservableObject {
+    private init() {
+        profiles = retreiveDefaultProfiles()
+        presets = retreiveDefaultPresets()
+    }
+    public static var shared: Defaults = Defaults()
+    @Published var profiles: [Profile] = []
+    @Published var presets: [Preset] = []
+}
 
 func retreiveDefaultPresets() -> [Preset] {
     if let presets = UserDefaults.standard.object(forKey: "presets") as? Data {
@@ -41,6 +52,7 @@ struct Preset: Codable {
                 let decoder = JSONDecoder()
                 if var presetsArray = try? decoder.decode([Preset].self, from: presets) {
                     presetsArray.append(self)
+                    Defaults.shared.presets = presetsArray
                     if let presetsArrayObj = try? encoder.encode(presetsArray) {
                         defaults.set(presetsArrayObj, forKey: "presets")
                     }
@@ -118,16 +130,34 @@ struct Profile: Codable {
     let isBulkRequest: Bool
     let bulkRequestBody: [[String : JSONValue]]
     
+    func saveOnDisk() {
+        let encodedProfile = try? JSONEncoder().encode(self)
+        let savePanel = NSSavePanel()
+        savePanel.canCreateDirectories = true
+        savePanel.showsTagField = false
+        savePanel.nameFieldStringValue = "\(self.profileName)_request.patchman"
+        savePanel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.modalPanelWindow)))
+        savePanel.begin { (result) in
+            if result.rawValue == NSApplication.ModalResponse.OK.rawValue {
+                guard let url = savePanel.url else {
+                    return
+                }
+                try? encodedProfile?.write(to: url)
+            }
+        }
+    }
+    
     func save() {
         let encoder = JSONEncoder()
         if let encoded = try? encoder.encode([self]) {
             let defaults = UserDefaults.standard
-            if let presets = defaults.object(forKey: "profiles") as? Data {
+            if let profiles = defaults.object(forKey: "profiles") as? Data {
                 let decoder = JSONDecoder()
-                if var presetsArray = try? decoder.decode([Profile].self, from: presets) {
-                    presetsArray.append(self)
-                    if let presetsArrayObj = try? encoder.encode(presetsArray) {
-                        defaults.set(presetsArrayObj, forKey: "profiles")
+                if var profilesArray = try? decoder.decode([Profile].self, from: profiles) {
+                    profilesArray.append(self)
+                    Defaults.shared.profiles = profilesArray
+                    if let profilesArrayObj = try? encoder.encode(profilesArray) {
+                        defaults.set(profilesArrayObj, forKey: "profiles")
                     }
                 }
             } else {

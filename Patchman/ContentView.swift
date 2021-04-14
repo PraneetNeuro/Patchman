@@ -424,6 +424,8 @@ struct PresetView: View {
 
 struct ContentView: View {
     
+    @ObservedObject var defaults: Defaults = Defaults.shared
+    
     @State var url:String = ""
     @State var response: String = ""
     @State var methods: [String] = RequestMethod.allCases.map({ $0.rawValue })
@@ -448,14 +450,11 @@ struct ContentView: View {
     @State var presetKey: String = ""
     @State var presetValue: String = ""
     @State var presetName: String = ""
-    @State var defaultPresets: [Preset] = retreiveDefaultPresets()
-    @State var defaultProfiles: [Profile] = retreiveDefaultProfiles()
     @State var isPresetAddShown: Bool = false
     @State var bulkRequestBody: [[String : Any]] = []
     @State var isBulkRequest: Bool = false
     @State var profileName: String = ""
     @State var cachePolicy: String = cachePolicies.useProtocolCachePolicy.rawValue
-
     @State var isHeaderAsJson: Bool = false
     @State var isBodyAsJson: Bool = false
     @State var headerJson: String = ""
@@ -471,12 +470,11 @@ struct ContentView: View {
     func saveProfile() {
         let p = Profile(profileName: profileName, method: method, url: url, headers: headers, requestBody: requestBody as? [String : JSONValue] ?? [:], isHeadersEnabled: isHeaderFieldsEnabled, isBulkRequest: isBulkRequest, bulkRequestBody: bulkRequestBody as? [[String : JSONValue]] ?? [[:]])
         p.save()
-        defaultProfiles.append(p)
-        print(retreiveDefaultProfiles())
+        defaults.profiles.append(p)
     }
     
     var body: some View {
-         HStack {
+        return HStack {
             VStack {
                 List {
                     Text("Presets")
@@ -501,11 +499,11 @@ struct ContentView: View {
                             if presetKey.count > 0 && presetValue.count > 0 && presetName.count > 0 {
                                 let preset = Preset(presetType: presetType, key: presetKey, value: presetValue, presetName: presetName)
                                 preset.save()
-                                defaultPresets.append(preset)
+                                defaults.presets.append(preset)
                             }
                         }.padding(.bottom)
                     }
-                    ForEach(defaultPresets, id: \.key){ preset in
+                    ForEach(defaults.presets, id: \.key){ preset in
                         PresetView(preset: preset)
                             .onTapGesture {
                                 switch preset.presetType {
@@ -520,11 +518,11 @@ struct ContentView: View {
                                 }
                             }
                     }
-                    Text(defaultProfiles.count > 0 ? "Profiles" : "")
+                    Text(defaults.profiles.count > 0 ? "Profiles" : "")
                         .bold()
                         .font(.title2)
                         .padding(.top)
-                    ForEach(defaultProfiles, id: \.profileName){ profile in
+                    ForEach(defaults.profiles, id: \.profileName){ profile in
                         ProfileView(profile: profile)
                             .onTapGesture {
                                 url = profile.url
@@ -541,6 +539,11 @@ struct ContentView: View {
                                     bodyJson = String(data: jsonBodyData, encoding: .utf8) ?? ""
                                 } catch {}
                             }
+                            .contextMenu(menuItems: {
+                                Button("Save on disk", action: {
+                                    profile.saveOnDisk()
+                                })
+                            })
                     }
                 }.frame(minWidth: 200, maxWidth: 200)
             }.listStyle(SidebarListStyle())
