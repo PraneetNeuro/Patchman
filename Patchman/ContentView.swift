@@ -424,6 +424,8 @@ struct PresetView: View {
 
 struct ContentView: View {
     
+    @State var dragOver: Bool = false
+    
     @ObservedObject var defaults: Defaults = Defaults.shared
     
     @State var url:String = ""
@@ -677,6 +679,24 @@ struct ContentView: View {
                 }
                 .listStyle(SidebarListStyle())
             }.frame(minWidth: 200, maxWidth: 200)
+        }.onDrop(of: ["public.file-url"], isTargeted: $dragOver) { providers -> Bool in
+            providers.first?.loadDataRepresentation(forTypeIdentifier: "public.file-url", completionHandler: { (data, error) in
+                if let data = data, let path = NSString(data: data, encoding: 4), let url = URL(string: path as String) {
+                    guard let data: Data = try? Data(contentsOf: url) else { return }
+                    guard let profile: Profile = try? JSONDecoder().decode(Profile.self, from: data) else { return }
+                    DispatchQueue.main.async {
+                        self.profileName = profile.profileName
+                        self.method = profile.method
+                        self.url = profile.url
+                        self.headers = profile.headers
+                        self.requestBody = profile.requestBody
+                        self.isHeaderFieldsEnabled = profile.isHeadersEnabled
+                        self.isBulkRequest = profile.isBulkRequest
+                        self.bulkRequestBody = profile.bulkRequestBody
+                    }
+                }
+            })
+            return true
         }
     }
 }
